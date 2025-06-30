@@ -19,38 +19,36 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
 
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
+
         if "Class" not in df.columns:
             st.error("הקובץ חייב להכיל עמודת Class.")
         else:
             X = df.drop("Class", axis=1)
             y = df["Class"]
 
-            # קידוד כל העמודות הקטגוריות
+            # יצירת משתנים דמה
             X = pd.get_dummies(X)
 
-            # בדיקות ניקיון נתונים
-            if X.isnull().sum().sum() > 0:
-                st.error("הקובץ מכיל ערכים חסרים. נא לנקות לפני האימון.")
-            else:
-                X = X.astype('float32')  # המרה כדי למנוע שגיאות טיפוס
+            # שמירת שמות כל העמודות לאחר get_dummies
+            all_columns = X.columns.tolist()
 
-                model = Pipeline([
-                    ('smote', SMOTE(random_state=42)),
-                    ('logistic', LogisticRegression(max_iter=200))
-                ])
-                kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            model = Pipeline([
+                ('smote', SMOTE(random_state=42)),
+                ('logistic', LogisticRegression(max_iter=200))
+            ])
+            kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-                for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
-                    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-                    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+            for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
+                X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+                y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+                model.fit(X_train, y_train)
 
-                    model.fit(X_train, y_train)
+                # רק אחרי הקיפול האחרון נשמור את המודל
+                if i == 5:
+                    joblib.dump(model, MODEL_PATH)
+                    joblib.dump(all_columns, FEATURES_PATH)
+                    st.success("✅ המודל אומן ונשמר. רענני את הדף לצורך תחזית.")
 
-                    # שמירת המודל מהקיפול האחרון
-                    if i == 5:
-                        joblib.dump(model, MODEL_PATH)
-                        joblib.dump(X.columns.tolist(), FEATURES_PATH)
-                        st.success("✅ המודל אומן ונשמר. רענני את הדף לצורך תחזית.")
 else:
     # שלב 2: טעינת מודל וחיזוי
     model = joblib.load(MODEL_PATH)
