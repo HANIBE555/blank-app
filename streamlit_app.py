@@ -4,7 +4,6 @@ import os
 import joblib
 from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import SMOTE
-from imblearn.pipeline import Pipeline
 
 MODEL_PATH = "model.pkl"
 FEATURES_PATH = "features.pkl"
@@ -25,24 +24,17 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
             X = df.drop("Class", axis=1)
             y = df["Class"]
 
-            # המרת קטגוריות למספרים
             X = pd.get_dummies(X)
-
-            # ניקוי ערכים חסרים
             X = X.fillna(0)
-
-            # וידוא טיפוס נתונים
             X = X.astype(float)
             y = y.astype(int)
 
-            # בניית Pipeline עם SMOTE ולוגיסטית
-            model = Pipeline([
-                ('smote', SMOTE(random_state=42)),
-                ('logistic', LogisticRegression(max_iter=200))
-            ])
+            # SMOTE מחוץ ל-Pipeline
+            smote = SMOTE(random_state=42)
+            X_res, y_res = smote.fit_resample(X, y)
 
-            # אימון
-            model.fit(X, y)
+            model = LogisticRegression(max_iter=200)
+            model.fit(X_res, y_res)
 
             # שמירת המודל ושמות העמודות
             joblib.dump(model, MODEL_PATH)
