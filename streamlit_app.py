@@ -6,6 +6,11 @@ from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
+streamlit
+pandas
+scikit-learn
+imblearn
+joblib
 
 MODEL_PATH = "model.pkl"
 FEATURES_PATH = "features.pkl"
