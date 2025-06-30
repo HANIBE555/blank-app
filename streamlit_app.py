@@ -42,4 +42,29 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
 
                 for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
                     X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-                    y_tra_
+                    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+                    model.fit(X_train, y_train)
+
+                    # שמירת המודל מהקיפול האחרון
+                    if i == 5:
+                        joblib.dump(model, MODEL_PATH)
+                        joblib.dump(X.columns.tolist(), FEATURES_PATH)
+                        st.success("✅ המודל אומן ונשמר. רענני את הדף לצורך תחזית.")
+else:
+    # שלב 2: טעינת מודל וחיזוי
+    model = joblib.load(MODEL_PATH)
+    features = joblib.load(FEATURES_PATH)
+
+    st.subheader("📝 הזנת תצפית חדשה")
+    user_input = []
+    for feature in features:
+        val = st.number_input(f"{feature}", value=0.0)
+        user_input.append(val)
+
+    if st.button("🔍 חשב תחזית"):
+        prediction = model.predict([user_input])[0]
+        if prediction == 1:
+            st.error("🔴 התחזית: סיכון לחזרת סרטן (1)")
+        else:
+            st.success("🟢 התחזית: ללא חזרת סרטן (0)")
