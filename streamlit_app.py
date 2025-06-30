@@ -24,9 +24,15 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
             X = df.drop("Class", axis=1)
             y = df["Class"]
 
-            # המר קטגוריות ל-Dummies
+            # המרת קטגוריות ל-Dummies
             X = pd.get_dummies(X)
-
+            
+            st.write("Shape of X:", X.shape)
+            st.write("Dtypes of X:\n", X.dtypes)
+            st.write("Shape of y:", y.shape)
+            st.write("Type of y:", type(y))
+            st.write("Unique values in y:", y.unique())
+            
             smote = SMOTE(random_state=42)
             model = LogisticRegression(max_iter=200)
             kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -34,15 +40,24 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
             for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
                 X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
                 y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-
-                # וידוא המרה ל-DataFrame ו-Series ו-numpy
-                if isinstance(X_train, pd.Series):
-                    X_train = X_train.to_frame()
-                X_train = X_train.astype(float).reset_index(drop=True)
+                
+                # ודא טיפוסים
+                X_train = X_train.astype(float)
                 y_train_array = np.array(y_train).ravel()
 
+                st.write(f"--- קיפול {i} ---")
+                st.write("X_train shape:", X_train.shape)
+                st.write("y_train_array shape:", y_train_array.shape)
+                st.write("X_train dtypes:\n", X_train.dtypes)
+                
                 # הפעלת SMOTE
-                X_train_res, y_train_res = smote.fit_resample(X_train, y_train_array)
+                try:
+                    X_train_res, y_train_res = smote.fit_resample(X_train, y_train_array)
+                    st.write("After SMOTE - X_train_res shape:", X_train_res.shape)
+                    st.write("After SMOTE - y_train_res shape:", y_train_res.shape)
+                except Exception as e:
+                    st.error(f"שגיאה ב-SMOTE בקיפול {i}: {e}")
+                    break
 
                 model.fit(X_train_res, y_train_res)
 
