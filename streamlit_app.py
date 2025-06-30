@@ -20,7 +20,7 @@ def prepare_data(df):
     X = pd.get_dummies(X)
     X = X.replace([float('inf'), -float('inf')], 0)  # להחליף אינסוף באפס
 
-    # וידוא טיפוסים
+    # המרה למספרים עם טיפול בשגיאות
     for col in X.columns:
         X[col] = pd.to_numeric(X[col], errors='coerce')
 
@@ -31,7 +31,6 @@ def prepare_data(df):
     X = X.astype(float)
     y = y.astype(int)
 
-    # לוודא אינדקס מסונכרן
     X = X.reset_index(drop=True)
     y = y.reset_index(drop=True)
     return X, y
@@ -56,7 +55,15 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
                 X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
                 y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-                # איזון עם SMOTE
+                # הדפסות מידע לאבחון
+                st.write(f"--- קיפול {i} ---")
+                st.write("Shape X_train:", X_train.shape)
+                st.write("Types X_train:", X_train.dtypes)
+                st.write("Any NaNs in X_train:", X_train.isnull().any().any())
+                st.write("Shape y_train:", y_train.shape)
+                st.write("Types y_train:", y_train.dtype)
+                st.write("Any NaNs in y_train:", y_train.isnull().any())
+
                 X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
 
                 model.fit(X_train_res, y_train_res)
