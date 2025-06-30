@@ -66,3 +66,4 @@ else:
         if prediction == 1:
             st.error("🔴 התחזית: סיכון לחזרת סרטן (1)")
         else:
+            st.success("🟢 התחזית: ללא חזרת סרטן (0)")
