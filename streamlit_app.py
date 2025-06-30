@@ -5,7 +5,6 @@ import joblib
 from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import classification_report, confusion_matrix
 
 MODEL_PATH = "model.pkl"
 FEATURES_PATH = "features.pkl"
@@ -23,20 +22,31 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
         else:
             X = df.drop("Class", axis=1)
             y = df["Class"]
+
+            # המרת קטגוריות ל-Dummies (אם יש)
             X = pd.get_dummies(X)
 
             smote = SMOTE(random_state=42)
-            kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
             model = LogisticRegression(max_iter=200)
+            kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
             for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
                 X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
                 y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-                # המרה ל-numpy array חד-מימדי
-                y_train_array = y_train.values.ravel()
+                # המרה ל-numpy וודא חד-ממדי ל-y
+                y_train_array = y_train.values if isinstance(y_train, pd.Series) else y_train
+                if len(y_train_array.shape) > 1:
+                    y_train_array = y_train_array.ravel()
+
+                # אם X_train Series המרה ל-DataFrame
+                if isinstance(X_train, pd.Series):
+                    X_train = X_train.to_frame()
+
+                # ביצוע SMOTE על נתוני האימון בלבד
                 X_train_res, y_train_res = smote.fit_resample(X_train, y_train_array)
 
+                # אימון מודל על הנתונים המועשרים
                 model.fit(X_train_res, y_train_res)
 
                 if i == 5:
