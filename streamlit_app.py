@@ -7,39 +7,51 @@ from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 
-
 MODEL_PATH = "model.pkl"
 FEATURES_PATH = "features.pkl"
 
 st.title("🔬 חיזוי חזרת סרטן עם Logistic + SMOTE + K-Fold")
 
-# שלב 1: אם אין מודל – העלאת קובץ ואימון
+# שלב 1: אימון מודל אם לא קיים
 if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
     st.subheader("📁 העלאת קובץ נתונים")
     uploaded_file = st.file_uploader("העלה את הקובץ final_data_for_project.csv", type="csv")
 
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
+
         if "Class" not in df.columns:
-            st.error("הקובץ חייב להכיל עמודת Class.")
+            st.error("❌ הקובץ חייב להכיל עמודת Class.")
         else:
             X = df.drop("Class", axis=1)
             y = df["Class"]
-            X = pd.get_dummies(X)
 
-            model = Pipeline([
-                ('smote', SMOTE(random_state=42)),
-                ('logistic', LogisticRegression(max_iter=200))
-            ])
             kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
             for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
                 X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
                 y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+                X_train = pd.get_dummies(X_train)
+                X_test = pd.get_dummies(X_test)
+
+                # ליישור עמודות בין train ל-test
+                X_test = X_test.reindex(columns=X_train.columns, fill_value=0)
+
+                # התאמת k של SMOTE לפי גודל מחלקת המיעוט
+                minority_count = sum(y_train == 1)
+                smote_k = min(5, minority_count - 1)
+
+                model = Pipeline([
+                    ('smote', SMOTE(random_state=42, k_neighbors=smote_k)),
+                    ('logistic', LogisticRegression(max_iter=200))
+                ])
+
                 model.fit(X_train, y_train)
+
                 if i == 5:
                     joblib.dump(model, MODEL_PATH)
-                    joblib.dump(X.columns.tolist(), FEATURES_PATH)
+                    joblib.dump(X_train.columns.tolist(), FEATURES_PATH)
                     st.success("✅ המודל אומן ונשמר. רענני את הדף לצורך תחזית.")
 else:
     # שלב 2: טעינת מודל וחיזוי
