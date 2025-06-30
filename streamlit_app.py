@@ -5,6 +5,7 @@ import joblib
 from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import StratifiedKFold
+import numpy as np
 
 MODEL_PATH = "model.pkl"
 FEATURES_PATH = "features.pkl"
@@ -23,7 +24,7 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
             X = df.drop("Class", axis=1)
             y = df["Class"]
 
-            # המרת קטגוריות ל-Dummies (אם יש)
+            # המר קטגוריות ל-Dummies
             X = pd.get_dummies(X)
 
             smote = SMOTE(random_state=42)
@@ -34,19 +35,15 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
                 X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
                 y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-                # המרה ל-numpy וודא חד-ממדי ל-y
-                y_train_array = y_train.values if isinstance(y_train, pd.Series) else y_train
-                if len(y_train_array.shape) > 1:
-                    y_train_array = y_train_array.ravel()
-
-                # אם X_train Series המרה ל-DataFrame
+                # וידוא המרה ל-DataFrame ו-Series ו-numpy
                 if isinstance(X_train, pd.Series):
                     X_train = X_train.to_frame()
+                X_train = X_train.astype(float).reset_index(drop=True)
+                y_train_array = np.array(y_train).ravel()
 
-                # ביצוע SMOTE על נתוני האימון בלבד
+                # הפעלת SMOTE
                 X_train_res, y_train_res = smote.fit_resample(X_train, y_train_array)
 
-                # אימון מודל על הנתונים המועשרים
                 model.fit(X_train_res, y_train_res)
 
                 if i == 5:
