@@ -25,6 +25,7 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
         else:
             X = df.drop("Class", axis=1)
             y = df["Class"]
+            X = pd.get_dummies(X)
 
             model = Pipeline([
                 ('smote', SMOTE(random_state=42)),
