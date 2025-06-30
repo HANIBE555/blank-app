@@ -12,16 +12,30 @@ FEATURES_PATH = "features.pkl"
 
 st.title("🔬 חיזוי חזרת סרטן עם Logistic + SMOTE + K-Fold")
 
-# פונקציה לניקוי והכנת הנתונים
 def prepare_data(df):
-    df = df.dropna()  # הסרת שורות עם ערכים חסרים
+    df = df.dropna()
     X = df.drop("Class", axis=1)
-    y = df["Class"].astype(int)
-    X = pd.get_dummies(X)  # המרת קטגוריות לבינאריות
+    y = df["Class"]
+
+    X = pd.get_dummies(X)
+    X = X.replace([float('inf'), -float('inf')], 0)  # להחליף אינסוף באפס
+
+    # וידוא טיפוסים
+    for col in X.columns:
+        X[col] = pd.to_numeric(X[col], errors='coerce')
+
+    if X.isnull().sum().sum() > 0:
+        st.error("יש ערכים חסרים אחרי המרה מספרית. אנא נקו את הנתונים.")
+        st.stop()
+
     X = X.astype(float)
+    y = y.astype(int)
+
+    # לוודא אינדקס מסונכרן
+    X = X.reset_index(drop=True)
+    y = y.reset_index(drop=True)
     return X, y
 
-# שלב 1 - אימון ושמירת מודל
 if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
     st.subheader("📁 העלאת קובץ נתונים")
     uploaded_file = st.file_uploader("העלה קובץ CSV עם עמודת Class", type="csv")
@@ -42,7 +56,7 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
                 X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
                 y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-                # איזון עם SMOTE רק על סט האימון
+                # איזון עם SMOTE
                 X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
 
                 model.fit(X_train_res, y_train_res)
@@ -53,13 +67,11 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
                     st.text(confusion_matrix(y_test, y_pred))
                     st.text(classification_report(y_test, y_pred))
 
-            # שמירת המודל ושמות העמודות
             joblib.dump(model, MODEL_PATH)
             joblib.dump(X.columns.tolist(), FEATURES_PATH)
 
             st.success("✅ המודל אומן ונשמר. רענני את הדף לצורך תחזית.")
 
-# שלב 2 - טעינת מודל וחיזוי תצפית חדשה
 else:
     model = joblib.load(MODEL_PATH)
     features = joblib.load(FEATURES_PATH)
