@@ -12,61 +12,34 @@ FEATURES_PATH = "features.pkl"
 
 st.title("🔬 חיזוי חזרת סרטן עם Logistic + SMOTE + K-Fold")
 
-# שלב 1: אימון מודל אם לא קיים
+# שלב 1: אם אין מודל – העלאת קובץ ואימון
 if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
     st.subheader("📁 העלאת קובץ נתונים")
     uploaded_file = st.file_uploader("העלה את הקובץ final_data_for_project.csv", type="csv")
 
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
-
         if "Class" not in df.columns:
-            st.error("❌ הקובץ חייב להכיל עמודת Class.")
+            st.error("הקובץ חייב להכיל עמודת Class.")
         else:
             X = df.drop("Class", axis=1)
             y = df["Class"]
 
-            kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            # קידוד כל העמודות הקטגוריות
+            X = pd.get_dummies(X)
 
-            for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
-                X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-                y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-
-                X_train = pd.get_dummies(X_train)
-                X_test = pd.get_dummies(X_test)
-
-                # ליישור עמודות בין train ל-test
-                X_test = X_test.reindex(columns=X_train.columns, fill_value=0)
-
-                # התאמת k של SMOTE לפי גודל מחלקת המיעוט
-                minority_count = sum(y_train == 1)
-                smote_k = min(5, minority_count - 1)
+            # בדיקות ניקיון נתונים
+            if X.isnull().sum().sum() > 0:
+                st.error("הקובץ מכיל ערכים חסרים. נא לנקות לפני האימון.")
+            else:
+                X = X.astype('float32')  # המרה כדי למנוע שגיאות טיפוס
 
                 model = Pipeline([
-                    ('smote', SMOTE(random_state=42, k_neighbors=smote_k)),
+                    ('smote', SMOTE(random_state=42)),
                     ('logistic', LogisticRegression(max_iter=200))
                 ])
+                kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-                model.fit(X_train, y_train)
-
-                if i == 5:
-                    joblib.dump(model, MODEL_PATH)
-                    joblib.dump(X_train.columns.tolist(), FEATURES_PATH)
-                    st.success("✅ המודל אומן ונשמר. רענני את הדף לצורך תחזית.")
-else:
-    # שלב 2: טעינת מודל וחיזוי
-    model = joblib.load(MODEL_PATH)
-    features = joblib.load(FEATURES_PATH)
-
-    st.subheader("📝 הזנת תצפית חדשה")
-    user_input = []
-    for feature in features:
-        val = st.number_input(f"{feature}", value=0.0)
-        user_input.append(val)
-
-    if st.button("🔍 חשב תחזית"):
-        prediction = model.predict([user_input])[0]
-        if prediction == 1:
-            st.error("🔴 התחזית: סיכון לחזרת סרטן (1)")
-        else:
-            st.success("🟢 התחזית: ללא חזרת סרטן (0)")
+                for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
+                    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+                    y_tra_
