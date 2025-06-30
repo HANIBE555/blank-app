@@ -12,7 +12,18 @@ FEATURES_PATH = "features.pkl"
 
 st.title("🔬 חיזוי חזרת סרטן עם Logistic + SMOTE + K-Fold")
 
-# שלב 1: אם אין מודל – העלאת קובץ ואימון
+def encode_and_align(df, columns=None):
+    df_encoded = pd.get_dummies(df)
+
+    if columns is not None:
+        for col in columns:
+            if col not in df_encoded.columns:
+                df_encoded[col] = 0
+        df_encoded = df_encoded[columns]
+    
+    return df_encoded
+
+# שלב 1: העלאה ואימון אם אין מודל
 if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
     st.subheader("📁 העלאת קובץ נתונים")
     uploaded_file = st.file_uploader("העלה את הקובץ final_data_for_project.csv", type="csv")
@@ -23,13 +34,10 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
         if "Class" not in df.columns:
             st.error("הקובץ חייב להכיל עמודת Class.")
         else:
-            X = df.drop("Class", axis=1)
+            X_raw = df.drop("Class", axis=1)
             y = df["Class"]
 
-            # יצירת משתנים דמה
-            X = pd.get_dummies(X)
-
-            # שמירת שמות כל העמודות לאחר get_dummies
+            X = encode_and_align(X_raw)
             all_columns = X.columns.tolist()
 
             model = Pipeline([
@@ -43,14 +51,13 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
                 y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
                 model.fit(X_train, y_train)
 
-                # רק אחרי הקיפול האחרון נשמור את המודל
                 if i == 5:
                     joblib.dump(model, MODEL_PATH)
                     joblib.dump(all_columns, FEATURES_PATH)
                     st.success("✅ המודל אומן ונשמר. רענני את הדף לצורך תחזית.")
 
 else:
-    # שלב 2: טעינת מודל וחיזוי
+    # שלב 2: טעינת מודל ותחזית
     model = joblib.load(MODEL_PATH)
     features = joblib.load(FEATURES_PATH)
 
