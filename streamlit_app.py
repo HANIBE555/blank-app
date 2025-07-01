@@ -35,9 +35,10 @@ model = joblib.load("model.pkl")
 features = joblib.load("features.pkl")
 
 # קלטים רציפים עם הסברים
-tumor_size = st.number_input("tumor-size (אמצע טווח בגודל הגידול, בין 2 ל־52)", step=0.1)
-inv_nodes = st.number_input("inv-nodes (אמצע טווח במספר קשריות נגועות, בין 1 ל־25)", step=0.1)
-deg_malig = st.number_input("deg-malig (דרגת ממאירות, ערך שלם בין 1 ל־3)", step=1, min_value=1, max_value=3)
+tumor_size = st.number_input("tumor-size (אמצע טווח בגודל הגידול)", step=0.1)
+inv_nodes = st.number_input("inv-nodes (אמצע טווח במספר קשריות נגועות)", step=0.1)
+deg_malig = st.number_input("deg-malig (דרגת ממאירות – ערך שלם בלבד)", step=1)
+
 
 # קלטים בינאריים (כן/לא) עם הסבר
 node_caps = st.selectbox("node-caps (קופסית קשרית נגועה: כן = 1, לא = 0)", options=["לא", "כן"])
