@@ -17,11 +17,13 @@ if uploaded_file:
         X = df.drop("Class", axis=1)
         y = df["Class"]
 
-        # כאן חשוב להגדיר shuffle=True ו-random_state קבוע
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
         model = LogisticRegression(max_iter=200, random_state=42)
 
         for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
+            st.write(f"Indices Train Fold {i}: {train_idx[:5]} ...")  # הדפס דוגמה לאינדקסים
+            st.write(f"Indices Test Fold {i}: {test_idx[:5]} ...")
+
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
             y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
