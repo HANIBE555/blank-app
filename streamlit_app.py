@@ -17,11 +17,23 @@ if uploaded_file is not None:
         X = df.drop("Class", axis=1)
         y = df["Class"]
 
+        # טיפול בעמודות: המרה למספרים בלבד (float, int)
+        X = pd.get_dummies(X)  # המרת קטגוריות למספרים
+        X = X.apply(pd.to_numeric, errors='coerce')  # המרת כל העמודות למספרים, לא נכונים יהפכו ל-NaN
+
+        # הסרת שורות עם ערכים חסרים אם יש
+        df_clean = pd.concat([X, y], axis=1).dropna()
+        X = df_clean.drop("Class", axis=1)
+        y = df_clean["Class"]
+
+        # המרת y ל-numpy array
+        y = y.values
+
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
         for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-            y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+            y_train, y_test = y[train_idx], y[test_idx]
 
             smote = SMOTE(random_state=42)
             X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
