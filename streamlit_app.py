@@ -7,6 +7,12 @@ min_max_values = {
     "inv-nodes": (1, 25),
     "deg-malig": (1, 3)
 }
+# הצגת הפיצ'רים שהמודל דורש (לבדיקה בלבד)
+features = joblib.load("features.pkl")
+st.write("🔍 הפיצ'רים שהמודל דורש:", features)
+st.write("📊 סה\"כ פיצ'רים שמצופים מהמודל:", len(features))
+st.write("📥 סה\"כ פיצ'רים שנמסרו בפועל:", len(input_data))
+
 
 # פונקציית נרמול עם אזהרות
 def min_max_normalize(value, min_val, max_val, field_name=""):
