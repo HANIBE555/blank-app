@@ -44,7 +44,7 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
                 st.write(f"--- קיפול {i} ---")
                 st.write("מטריצת בלבול:")
                 st.write(cm)
-                st.write("דו"ח סיווג:")
+                st.write("דוח סיווג:")
                 st.text(report)
 
             # שמירת המודל והעמודות לשימוש עתידי
