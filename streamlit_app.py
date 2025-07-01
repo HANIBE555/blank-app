@@ -1,31 +1,69 @@
+import streamlit as st
 import pandas as pd
+import os
+import joblib
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 
-# קריאת הקובץ עם הדגימות (נוצר קודם)
-df_train = pd.read_csv("train_with_smote.csv")
-X_train = df_train.drop("Class", axis=1)
-y_train = df_train["Class"]
+MODEL_PATH = "model.pkl"
+FEATURES_PATH = "features.pkl"
 
-# קורא את כל הנתונים המקוריים לבדיקה
-df = pd.read_csv("final_data_for_project.csv")
-X = df.drop("Class", axis=1)
-y = df["Class"]
+st.title("🔬 חיזוי חזרת סרטן עם Logistic Regression - על קובץ SMOTE")
 
-kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-model = LogisticRegression(max_iter=200)
+# שלב 1: אם אין מודל – העלאת קובץ ואימון
+if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
+    st.subheader("📁 העלאת קובץ אימון עם SMOTE")
+    uploaded_file = st.file_uploader("העלה את הקובץ train_with_smote.csv", type="csv")
 
-for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
-    # בשביל להעריך – לא עושים SMOTE כאן, משתמשים בקובץ האימון שנוצר
-    X_test, y_test = X.iloc[test_idx], y.iloc[test_idx]
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file)
 
-    # מאמנים על כל הסט שאספת ב-SMOTE
-    model.fit(X_train, y_train)
+        if "Class" not in df.columns:
+            st.error("הקובץ חייב להכיל עמודת Class.")
+        else:
+            X = df.drop("Class", axis=1)
+            y = df["Class"]
 
-    y_pred = model.predict(X_test)
+            # המרת קטגוריות ל-Dummies אם יש
+            X = pd.get_dummies(X)
 
-    if i == 5:  # מציג את הפלט של הקיפול האחרון בלבד
-        print(f"\nLogistic Regression + SMOTE (train file) - Evaluation on Fold {i}")
-        print(confusion_matrix(y_test, y_pred))
-        print(classification_report(y_test, y_pred))
+            # חלוקה לסט אימון ובדיקה (לבדיקה בלבד)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42, stratify=y
+            )
+
+            model = LogisticRegression(max_iter=200)
+            model.fit(X_train, y_train)
+
+            y_pred = model.predict(X_test)
+            cm = confusion_matrix(y_test, y_pred)
+            report = classification_report(y_test, y_pred)
+
+            st.write("מטריצת בלבול (סט בדיקה):")
+            st.write(cm)
+            st.write("דו\"ח סיווג (סט בדיקה):")
+            st.text(report)
+
+            # שמירת המודל והעמודות לשימוש עתידי
+            joblib.dump(model, MODEL_PATH)
+            joblib.dump(X.columns.tolist(), FEATURES_PATH)
+            st.success("✅ המודל אומן ונשמר. רענן את הדף לצורך תחזית.")
+
+else:
+    # שלב 2: טעינת מודל ותחזית
+    model = joblib.load(MODEL_PATH)
+    features = joblib.load(FEATURES_PATH)
+
+    st.subheader("📝 הזנת תצפית חדשה לתחזית")
+    user_input = []
+    for feature in features:
+        val = st.number_input(f"{feature}", value=0.0)
+        user_input.append(val)
+
+    if st.button("🔍 חשב תחזית"):
+        prediction = model.predict([user_input])[0]
+        if prediction == 1:
+            st.error("🔴 התחזית: סיכון לחזרת סרטן (1)")
+        else:
+            st.success("🟢 התחזית: ללא חזרת סרטן (0)")
