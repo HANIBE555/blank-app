@@ -1,62 +1,80 @@
 import streamlit as st
-import numpy as np
 import joblib
 
-# טווחי מינימום ומקסימום לנרמול
+# טווחים לנרמול
 min_max_values = {
     "tumor-size": (2, 52),
     "inv-nodes": (1, 25),
     "deg-malig": (1, 3)
 }
 
-# פונקציית נרמול עם טיפול בחריגים
-def min_max_normalize(value, min_val, max_val):
+# פונקציית נרמול עם אזהרות
+def min_max_normalize(value, min_val, max_val, field_name=""):
     if value < min_val:
-        st.warning(f"⚠️ הערך {value} קטן מהמינימום האפשרי ({min_val}) - מנורמל ל-0")
+        st.warning(f"⚠️ הערך {value} ב־'{field_name}' קטן מהמינימום האפשרי ({min_val}) – מנורמל ל־0")
         return 0.0
     elif value > max_val:
-        st.warning(f"⚠️ הערך {value} גדול מהמקסימום האפשרי ({max_val}) - מנורמל ל-1")
+        st.warning(f"⚠️ הערך {value} ב־'{field_name}' גדול מהמקסימום האפשרי ({max_val}) – מנורמל ל־1")
         return 1.0
     return (value - min_val) / (max_val - min_val)
 
-st.title("🔬 תחזית חזרת סרטן - הזנת נתונים ונרמול")
+# פונקציה להפיכת "כן"/"לא" ל־0/1
+def to_binary(val):
+    return 1 if val == "כן" else 0
 
-# טעינת המודל ורשימת העמודות
+# כותרת והסבר כללי
+st.title("🔬 תחזית חזרת סרטן - הזנת נתונים לרופא")
+st.markdown("""
+🧑‍⚕️ **הנחיות להזנת ערכים:**
+- `tumor-size` ו־`inv-nodes`: נא להזין את **אמצע הטווח** (למשל טווח 10–14 → הזן 12).
+- משתנים בינאריים (כן/לא):  
+  הזן **"כן" = 1**, **"לא" = 0** דרך תיבת הבחירה.""")
+
+# טעינת המודל ורשימת הפיצ'רים
 model = joblib.load("model.pkl")
 features = joblib.load("features.pkl")
 
-# הזנת נתונים חופשית
-tumor_size = st.number_input("tumor-size", step=0.01)
-inv_nodes = st.number_input("inv-nodes", step=0.01)
-deg_malig = st.number_input("deg-malig", step=1)
+# קלטים רציפים עם הסברים
+tumor_size = st.number_input("tumor-size (אמצע טווח בגודל הגידול, בין 2 ל־52)", step=0.1)
+inv_nodes = st.number_input("inv-nodes (אמצע טווח במספר קשריות נגועות, בין 1 ל־25)", step=0.1)
+deg_malig = st.number_input("deg-malig (דרגת ממאירות, ערך שלם בין 1 ל־3)", step=1, min_value=1, max_value=3)
 
-# משתנים בינאריים
-node_caps = st.selectbox("node-caps", options=[0, 1])
-breast_quad_central = st.selectbox("breast-quad_central", options=[0,1])
-breast_quad_left_low = st.selectbox("breast-quad_left_low", options=[0,1])
-breast_quad_left_up = st.selectbox("breast-quad_left_up", options=[0,1])
-breast_quad_right_low = st.selectbox("breast-quad_right_low", options=[0,1])
-breast_quad_right_up = st.selectbox("breast-quad_right_up", options=[0,1])
+# קלטים בינאריים (כן/לא) עם הסבר
+node_caps = st.selectbox("node-caps (קופסית קשרית נגועה: כן = 1, לא = 0)", options=["לא", "כן"])
+breast_quad_central = st.selectbox("breast-quad_central (גידול במרכז השד: כן = 1, לא = 0)", options=["לא", "כן"])
+breast_quad_left_low = st.selectbox("breast-quad_left_low (גידול בשד שמאל תחתון: כן = 1, לא = 0)", options=["לא", "כן"])
+breast_quad_left_up = st.selectbox("breast-quad_left_up (גידול בשד שמאל עליון: כן = 1, לא = 0)", options=["לא", "כן"])
+breast_quad_right_low = st.selectbox("breast-quad_right_low (גידול בשד ימין תחתון: כן = 1, לא = 0)", options=["לא", "כן"])
+breast_quad_right_up = st.selectbox("breast-quad_right_up (גידול בשד ימין עליון: כן = 1, לא = 0)", options=["לא", "כן"])
+
+# גיל המעבר - קידוד one-hot עם הסבר
+menopause_choice = st.radio("מצב גיל המעבר:", ["ge40 (מעל גיל 40)", "lt40 (מתחת לגיל 40)", "premeno (לפני גיל מעבר)"])
+menopause_ge40 = 1 if menopause_choice.startswith("ge40") else 0
+menopause_lt40 = 1 if menopause_choice.startswith("lt40") else 0
+menopause_premeno = 1 if menopause_choice.startswith("premeno") else 0
 
 # נרמול משתנים רציפים
-tumor_size_norm = min_max_normalize(tumor_size, *min_max_values["tumor-size"])
-inv_nodes_norm = min_max_normalize(inv_nodes, *min_max_values["inv-nodes"])
-deg_malig_norm = min_max_normalize(deg_malig, *min_max_values["deg-malig"])
+tumor_size_norm = min_max_normalize(tumor_size, *min_max_values["tumor-size"], field_name="tumor-size")
+inv_nodes_norm = min_max_normalize(inv_nodes, *min_max_values["inv-nodes"], field_name="inv-nodes")
+deg_malig_norm = min_max_normalize(deg_malig, *min_max_values["deg-malig"], field_name="deg-malig")
 
-# יצירת מערך קלט למודל
+# יצירת מערך קלט למודל לפי סדר העמודות
 input_data = [
     tumor_size_norm,
     inv_nodes_norm,
-    node_caps,
+    to_binary(node_caps),
     deg_malig_norm,
-    breast_quad_central,
-    breast_quad_left_low,
-    breast_quad_left_up,
-    breast_quad_right_low,
-    breast_quad_right_up
+    to_binary(breast_quad_central),
+    to_binary(breast_quad_left_low),
+    to_binary(breast_quad_left_up),
+    to_binary(breast_quad_right_low),
+    to_binary(breast_quad_right_up),
+    menopause_ge40,
+    menopause_lt40,
+    menopause_premeno
 ]
 
-# חישוב התחזית
+# תחזית
 if st.button("🔍 חשב תחזית"):
     prediction = model.predict([input_data])[0]
     if prediction == 1:
