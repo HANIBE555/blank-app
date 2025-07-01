@@ -3,15 +3,14 @@ import pandas as pd
 import os
 import joblib
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import classification_report, confusion_matrix
 
 MODEL_PATH = "model.pkl"
 FEATURES_PATH = "features.pkl"
 
-st.title("🔬 חיזוי חזרת סרטן עם Logistic Regression - על קובץ SMOTE")
+st.title("🔬 חיזוי חזרת סרטן עם Logistic Regression - על קובץ SMOTE + K-Fold")
 
-# שלב 1: אם אין מודל – העלאת קובץ ואימון
 if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
     st.subheader("📁 העלאת קובץ אימון עם SMOTE")
     uploaded_file = st.file_uploader("העלה את הקובץ train_with_smote.csv", type="csv")
@@ -25,33 +24,32 @@ if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
             X = df.drop("Class", axis=1)
             y = df["Class"]
 
-            # המרת קטגוריות ל-Dummies אם יש
             X = pd.get_dummies(X)
 
-            # חלוקה לסט אימון ובדיקה (לבדיקה בלבד)
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=0.2, random_state=42, stratify=y
-            )
-
+            kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
             model = LogisticRegression(max_iter=200)
-            model.fit(X_train, y_train)
 
-            y_pred = model.predict(X_test)
-            cm = confusion_matrix(y_test, y_pred)
-            report = classification_report(y_test, y_pred)
+            for i, (train_idx, test_idx) in enumerate(kf.split(X, y), 1):
+                X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+                y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-            st.write("מטריצת בלבול (סט בדיקה):")
-            st.write(cm)
-            st.write("דו\"ח סיווג (סט בדיקה):")
-            st.text(report)
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+                cm = confusion_matrix(y_test, y_pred)
+                report = classification_report(y_test, y_pred)
 
-            # שמירת המודל והעמודות לשימוש עתידי
+                st.write(f"--- קיפול {i} ---")
+                st.write("מטריצת בלבול:")
+                st.write(cm)
+                st.write("דו\"ח סיווג:")
+                st.text(report)
+
+            # שמירת המודל והעמודות (מהקיפול האחרון)
             joblib.dump(model, MODEL_PATH)
             joblib.dump(X.columns.tolist(), FEATURES_PATH)
             st.success("✅ המודל אומן ונשמר. רענן את הדף לצורך תחזית.")
 
 else:
-    # שלב 2: טעינת מודל ותחזית
     model = joblib.load(MODEL_PATH)
     features = joblib.load(FEATURES_PATH)
 
