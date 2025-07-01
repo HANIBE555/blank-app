@@ -47,7 +47,6 @@ input_data = [
     breast_quad_right_low,
     breast_quad_right_up
 ]
-
 if st.button("🔍 חשב תחזית"):
     prediction = model.predict([input_data])[0]
     if prediction == 1:
