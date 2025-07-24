@@ -2,7 +2,7 @@ import pandas as pd
 import joblib
 from sklearn.linear_model import LogisticRegression
 
-df = pd.read_csv("data.csv")  # הקובץ המקורי שלך
+df = pd.read_csv("all_smote_resampled_data.csv")  # הקובץ המקורי שלך
 X = df.drop("Class", axis=1)
 y = df["Class"]
 
