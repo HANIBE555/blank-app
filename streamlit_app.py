@@ -1,4 +1,28 @@
 import streamlit as st
+st.markdown(
+    """
+    <style>
+    .main {
+        direction: rtl;
+        text-align: right;
+    }
+    .css-1v0mbdj.e115fcil1 {  /* כותרת */
+        direction: rtl;
+        text-align: right;
+    }
+    .stMarkdown p {
+        direction: rtl;
+        text-align: right;
+    }
+    .stSelectbox div, .stRadio div, .stNumberInput label {
+        direction: rtl;
+        text-align: right;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
