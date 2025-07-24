@@ -2,17 +2,7 @@ import pandas as pd
 import joblib
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
-st.markdown(
-    """
-    <style>
-    .main {
-        direction: rtl;
-        text-align: right;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+
 
 # קריאת הקובץ
 df = pd.read_csv("all_smote_resampled_data.csv")
