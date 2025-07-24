@@ -2,26 +2,22 @@ import streamlit as st
 st.markdown(
     """
     <style>
-    .main {
-        direction: rtl;
-        text-align: right;
+    html, body, [class*="css"] {
+        direction: rtl !important;
+        text-align: right !important;
     }
-    .css-1v0mbdj.e115fcil1 {  /* כותרת */
-        direction: rtl;
-        text-align: right;
+    .st-emotion-cache-1v0mbdj, .stMarkdown {
+        direction: rtl !important;
+        text-align: right !important;
     }
-    .stMarkdown p {
-        direction: rtl;
-        text-align: right;
-    }
-    .stSelectbox div, .stRadio div, .stNumberInput label {
-        direction: rtl;
-        text-align: right;
+    .st-emotion-cache-13k62yr {
+        direction: rtl !important;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
+
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
