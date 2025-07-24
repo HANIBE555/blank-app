@@ -19,18 +19,6 @@ def to_binary(val):
 import streamlit as st
 import joblib
 
-# 🧠 סגנון RTL
-st.markdown(
-    """
-    <style>
-    .main {
-        direction: rtl;
-        text-align: right;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 st.title("🔬 תחזית חזרת סרטן - הזנת נתונים לרופא")
 
