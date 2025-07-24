@@ -16,6 +16,28 @@ def min_max_normalize(value, min_val, max_val):
 # המרה של "כן"/"לא" ל־0/1
 def to_binary(val):
     return 1 if val == "כן" else 0
+import streamlit as st
+import joblib
+
+# 🧠 סגנון RTL
+st.markdown(
+    """
+    <style>
+    .main {
+        direction: rtl;
+        text-align: right;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.title("🔬 תחזית חזרת סרטן - הזנת נתונים לרופא")
+
+# טעינת המודל
+model = joblib.load("model.pkl")
+
+# המשך כמו בקוד שלך...
 
 # כותרת והנחיות
 st.title("🔬 תחזית חזרת סרטן - הזנת נתונים לרופא")
